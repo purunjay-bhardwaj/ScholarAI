@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import hero5 from "../assets/hero5.jpg";
@@ -16,27 +17,25 @@ export default function Scholarships() {
 
   const navigate = useNavigate();
 
-  // 🔥 SAFE STRING HANDLER (VERY IMPORTANT)
+  // SAFE STRING
   const toSafeString = (value) => {
     if (!value) return "";
     if (Array.isArray(value)) return value.join(",").toLowerCase();
     return String(value).toLowerCase();
   };
 
-  // 🔥 MATCH SCORE (FIXED)
+  // MATCH SCORE
   const calculateScore = (sch, user) => {
     if (!user) return 0;
 
     let score = 0;
     let total = 0;
 
-    // GPA
     if (sch.min_gpa) {
       total += 2;
       if (user.cgpa >= sch.min_gpa) score += 2;
     }
 
-    // INCOME
     if (sch.min_income && sch.max_income) {
       total += 2;
       if (
@@ -46,60 +45,43 @@ export default function Scholarships() {
         score += 2;
     }
 
-    // GENDER
     total += 1;
     if (!sch.gender || sch.gender === user.gender) score += 1;
 
-    // ETHNICITY
     total += 1;
     if (!sch.ethnicity || sch.ethnicity === user.ethnicity) score += 1;
 
-    // 🔥 MAJOR (FIXED)
     if (sch.eligible_majors && user.major) {
       total += 2;
-
       const majors = toSafeString(sch.eligible_majors);
-      const userMajor = user.major.toLowerCase();
-
-      if (majors.includes(userMajor)) score += 2;
+      if (majors.includes(user.major.toLowerCase())) score += 2;
     }
 
     return total === 0 ? 0 : Math.round((score / total) * 100);
   };
 
-  // 🔥 FETCH DATA (SAFE)
+  // FETCH
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = await getCurrentUser();
         if (!user) return;
 
-        const { data: profile, error: userError } = await supabase
+        const { data: profile } = await supabase
           .from("users")
           .select("*")
           .eq("id", user.id)
           .single();
 
-        if (userError) {
-          console.error(userError);
-          return;
-        }
-
         setUserData(profile);
 
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("scholarships")
           .select("*");
-
-        if (error) {
-          console.error(error);
-          return;
-        }
 
         const schList = data || [];
         setScholarships(schList);
 
-        // ELIGIBLE FILTER
         const eligible = schList.filter(
           (sch) =>
             (!sch.min_gpa || profile.cgpa >= sch.min_gpa) &&
@@ -108,19 +90,16 @@ export default function Scholarships() {
 
         setEligibleScholarships(eligible);
       } catch (err) {
-        console.error("Fetch error:", err);
+        console.error(err);
       }
     };
 
     fetchData();
   }, []);
 
-  // 🔥 FILTER (SAFE)
+  // FILTER
   const filteredScholarships = scholarships.filter((sch) => {
-    const name = sch.scholarship_name
-      ? sch.scholarship_name.toLowerCase()
-      : "";
-
+    const name = sch.scholarship_name?.toLowerCase() || "";
     const matchesSearch = name.includes(search.toLowerCase());
 
     if (activeTab === "eligible") {
@@ -133,7 +112,7 @@ export default function Scholarships() {
     return matchesSearch;
   });
 
-  // 🔥 TOP MATCHES
+  // TOP MATCHES
   const topMatches = [...scholarships]
     .map((sch) => ({
       ...sch,
@@ -141,6 +120,21 @@ export default function Scholarships() {
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
+
+  // ANIMATION VARIANTS
+  const container = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const card = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0 },
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -152,23 +146,36 @@ export default function Scholarships() {
         style={{ backgroundImage: `url(${hero5})` }}
       >
         <div className="absolute inset-0 bg-black/60"></div>
-        <h1 className="relative text-white text-4xl font-bold">
+
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative text-white text-4xl font-bold"
+        >
           Explore Scholarships
-        </h1>
+        </motion.h1>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-16">
 
         {/* TOP MATCHES */}
         <h2 className="text-2xl font-bold text-[#0080FF] mb-6">
-          🔥 Top Matches For You
+          Top Matches For You
         </h2>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-14">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid md:grid-cols-3 gap-6 mb-14"
+        >
           {topMatches.map((sch) => (
-            <div
+            <motion.div
               key={sch.id}
-              className="bg-white p-6 rounded-xl shadow hover:shadow-lg flex flex-col justify-between min-h-[260px]"
+              variants={card}
+              whileHover={{ scale: 1.03 }}
+              className="bg-white p-6 rounded-xl shadow flex flex-col justify-between min-h-[260px]"
             >
               <div>
                 <h3 className="text-lg font-semibold text-[#0080FF]">
@@ -182,7 +189,7 @@ export default function Scholarships() {
 
               <div className="mt-4">
                 <p className="text-sm font-medium mb-3">
-                  🏆 {sch.score}% Match
+                  {sch.score}% Match
                 </p>
 
                 <button
@@ -192,9 +199,9 @@ export default function Scholarships() {
                   View Details
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* SEARCH + FILTER */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10">
@@ -215,7 +222,7 @@ export default function Scholarships() {
                   : "bg-white border"
               }`}
             >
-              Eligible ⭐
+              Eligible
             </button>
 
             <button
@@ -232,14 +239,21 @@ export default function Scholarships() {
         </div>
 
         {/* GRID */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid md:grid-cols-3 gap-6"
+        >
           {filteredScholarships.map((sch) => {
             const score = calculateScore(sch, userData);
 
             return (
-              <div
+              <motion.div
                 key={sch.id}
-                className="bg-white p-6 rounded-xl shadow hover:shadow-lg flex flex-col justify-between min-h-[280px]"
+                variants={card}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-6 rounded-xl shadow flex flex-col justify-between min-h-[280px]"
               >
                 <div>
                   <h3 className="text-lg font-semibold text-[#0080FF]">
@@ -262,13 +276,13 @@ export default function Scholarships() {
                   </button>
 
                   <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                    {score}% Match
+                    {score}%
                   </span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
       </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import hero4 from "../assets/hero4.jpg";
@@ -17,7 +18,22 @@ export default function Results() {
 
   const TOP_LIMIT = 4;
 
-  // ✅ MATCH FUNCTION
+  // 🔥 ANIMATION VARIANTS
+  const container = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const card = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0 },
+  };
+
+  // MATCH FUNCTION
   const calculateScore = (sch, profile) => {
     if (!profile) return 0;
 
@@ -62,14 +78,13 @@ export default function Results() {
     return total === 0 ? 0 : Math.round((score / total) * 100);
   };
 
-  // 🔥 FETCH DATA
+  // FETCH
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = await getCurrentUser();
         if (!user) return;
 
-        // PROFILE
         const { data: profile } = await supabase
           .from("users")
           .select("*")
@@ -78,20 +93,17 @@ export default function Results() {
 
         setUserData(profile);
 
-        // SCHOLARSHIPS
         const { data: scholarships } = await supabase
           .from("scholarships")
           .select("*");
 
         const all = scholarships || [];
 
-        // ✅ LOCAL STORAGE (FAST UI)
         const localApplied =
           JSON.parse(localStorage.getItem("appliedScholarships")) || [];
 
         const localAppliedIds = localApplied.map((a) => a.id);
 
-        // ✅ SUPABASE (REAL DATA)
         const { data: appliedData } = await supabase
           .from("applied_scholarships")
           .select("scholarship_id")
@@ -101,17 +113,14 @@ export default function Results() {
           (a) => a.scholarship_id
         );
 
-        // 🔥 MERGE BOTH
         const appliedIds = [...new Set([...localAppliedIds, ...dbAppliedIds])];
 
-        // FULL APPLIED DATA
         const appliedFull = all.filter((sch) =>
           appliedIds.includes(sch.id)
         );
 
         setApplied(appliedFull);
 
-        // MATCHES
         const scored = all.map((sch) => ({
           ...sch,
           score: calculateScore(sch, profile),
@@ -119,7 +128,6 @@ export default function Results() {
         }));
 
         scored.sort((a, b) => b.score - a.score);
-
         setAllMatches(scored);
 
       } catch (err) {
@@ -145,15 +153,25 @@ export default function Results() {
         style={{ backgroundImage: `url(${hero4})` }}
       >
         <div className="absolute inset-0 bg-black/60"></div>
-        <h1 className="relative text-white text-4xl font-bold">
+
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative text-white text-4xl font-bold"
+        >
           Your Scholarship Dashboard
-        </h1>
+        </motion.h1>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-16">
 
         {/* PROFILE */}
-        <div className="bg-white p-6 rounded-xl shadow mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-6 rounded-xl shadow mb-12"
+        >
           <h2 className="text-xl font-bold text-[#0080FF] mb-4">
             Profile Overview
           </h2>
@@ -171,51 +189,64 @@ export default function Results() {
             />
             <ProfileItem label="Major" value={userData?.major} />
           </div>
-        </div>
+        </motion.div>
 
         {/* APPLIED */}
-        <SectionTitle title="Your Applications 📄" />
+        <SectionTitle title="Your Applications" />
 
-        {applied.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-6 mb-14">
-            {applied.map((sch) => (
-              <div
-                key={sch.id}
-                className="bg-green-50 border p-5 rounded-xl flex justify-between items-center"
-              >
-                <div>
-                  <h3 className="font-semibold text-green-700">
-                    {sch.scholarship_name}
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {sch.description}
-                  </p>
-                </div>
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
+          {applied.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-6 mb-14">
+              {applied.map((sch) => (
+                <motion.div
+                  key={sch.id}
+                  variants={card}
+                  whileHover={{ scale: 1.02 }}
+                  className="bg-green-50 border p-5 rounded-xl flex justify-between items-center"
+                >
+                  <div>
+                    <h3 className="font-semibold text-green-700">
+                      {sch.scholarship_name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {sch.description}
+                    </p>
+                  </div>
 
-                <span className="bg-green-600 text-white px-3 py-1 text-xs rounded-full">
-                  Applied
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mb-12 text-gray-500">
-            No applications yet.
-          </p>
-        )}
+                  <span className="bg-green-600 text-white px-3 py-1 text-xs rounded-full">
+                    Applied
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="mb-12 text-gray-500">
+              No applications yet.
+            </p>
+          )}
+        </motion.div>
 
         {/* TOP MATCHES */}
-        <SectionTitle title="Top Matches 🎯" />
+        <SectionTitle title="Top Matches" />
 
         {loading ? (
           <p>Loading...</p>
-        ) : topMatches.length > 0 ? (
+        ) : (
           <>
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid md:grid-cols-2 gap-6 mb-8"
+            >
               {topMatches.map((sch) => (
                 <ScholarshipCard key={sch.id} sch={sch} navigate={navigate} />
               ))}
-            </div>
+            </motion.div>
 
             {otherMatches.length > 0 && (
               <div className="text-center mb-10">
@@ -231,17 +262,18 @@ export default function Results() {
             )}
 
             {showAll && (
-              <div className="grid md:grid-cols-2 gap-6">
+              <motion.div
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="grid md:grid-cols-2 gap-6"
+              >
                 {otherMatches.map((sch) => (
                   <ScholarshipCard key={sch.id} sch={sch} navigate={navigate} />
                 ))}
-              </div>
+              </motion.div>
             )}
           </>
-        ) : (
-          <p className="text-gray-500">
-            No matches found (check profile)
-          </p>
         )}
       </div>
 
@@ -271,7 +303,14 @@ function ProfileItem({ label, value }) {
 
 function ScholarshipCard({ sch, navigate }) {
   return (
-    <div className="bg-white border p-6 rounded-xl shadow hover:shadow-lg transition flex flex-col justify-between">
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 30 },
+        show: { opacity: 1, y: 0 },
+      }}
+      whileHover={{ scale: 1.03 }}
+      className="bg-white border p-6 rounded-xl shadow flex flex-col justify-between"
+    >
       <div>
         <h3 className="font-semibold text-[#0080FF]">
           {sch.scholarship_name}
@@ -284,7 +323,7 @@ function ScholarshipCard({ sch, navigate }) {
 
       <div className="flex justify-between items-center mt-5">
         <span className="text-sm font-medium">
-          🎯 {sch.score}% Match
+          {sch.score}% Match
         </span>
 
         <div className="flex gap-2">
@@ -302,6 +341,6 @@ function ScholarshipCard({ sch, navigate }) {
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
