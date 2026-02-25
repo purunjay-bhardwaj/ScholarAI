@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import hero4 from "../assets/hero4.jpg";
@@ -12,7 +13,18 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 FETCH USER DATA
+  const container = {
+    hidden: {},
+    show: {
+      transition: { staggerChildren: 0.12 },
+    },
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 25 },
+    show: { opacity: 1, y: 0 },
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -44,21 +56,16 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  // 🔥 LOGOUT FUNCTION
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-
-      // optional: clear local storage
       localStorage.clear();
-
       navigate("/login");
     } catch (err) {
       console.error("Logout error:", err);
     }
   };
 
-  // 🔥 PROFILE COMPLETION
   const fields = [
     "name",
     "gender",
@@ -86,13 +93,20 @@ export default function Profile() {
   }
 
   return (
-    <div className="bg-white min-h-screen">
+    <motion.div
+      className="bg-white min-h-screen"
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
       <Navbar />
 
-      {/* HERO */}
-      <div
+      <motion.div
         className="relative w-full h-[45vh] bg-cover bg-center flex items-center justify-center"
         style={{ backgroundImage: `url(${hero4})` }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
       >
         <div className="absolute inset-0 bg-black/60"></div>
         <div className="relative text-center text-white">
@@ -103,14 +117,19 @@ export default function Profile() {
             Manage and track your academic profile
           </p>
         </div>
-      </div>
+      </motion.div>
 
-      {/* CONTENT */}
-      <div className="max-w-5xl mx-auto px-8 py-20">
-
-        {/* 🔥 HEADER */}
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-8 rounded-xl shadow mb-12">
-
+      <motion.div
+        className="max-w-5xl mx-auto px-8 py-20"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.6 }}
+      >
+        <motion.div
+          className="bg-gradient-to-r from-blue-50 to-blue-100 p-8 rounded-xl shadow mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-2xl font-bold text-[#0080FF]">
@@ -121,9 +140,7 @@ export default function Profile() {
               </p>
             </div>
 
-            {/* 🔥 BUTTONS */}
             <div className="flex gap-3">
-
               <button
                 onClick={() => navigate("/form")}
                 className="bg-[#0080FF] text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition"
@@ -137,11 +154,9 @@ export default function Profile() {
               >
                 Logout
               </button>
-
             </div>
           </div>
 
-          {/* 🔥 COMPLETION BAR */}
           <div>
             <div className="flex justify-between text-sm mb-2">
               <span>Profile Completion</span>
@@ -149,57 +164,67 @@ export default function Profile() {
             </div>
 
             <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-[#0080FF] h-3 rounded-full transition-all"
-                style={{ width: `${completion}%` }}
-              ></div>
+              <motion.div
+                className="bg-[#0080FF] h-3 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${completion}%` }}
+                transition={{ duration: 0.8 }}
+              ></motion.div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* 🔥 SECTIONS */}
-        <div className="grid md:grid-cols-2 gap-10">
+        <motion.div
+          className="grid md:grid-cols-2 gap-10"
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div variants={item}>
+            <ProfileSection title="Personal Information">
+              <ProfileItem label="Full Name" value={profile?.name} />
+              <ProfileItem label="Gender" value={profile?.gender} />
+              <ProfileItem label="Ethnicity" value={profile?.ethnicity} />
+            </ProfileSection>
+          </motion.div>
 
-          <ProfileSection title="Personal Information">
-            <ProfileItem label="Full Name" value={profile?.name} />
-            <ProfileItem label="Gender" value={profile?.gender} />
-            <ProfileItem label="Ethnicity" value={profile?.ethnicity} />
-          </ProfileSection>
+          <motion.div variants={item}>
+            <ProfileSection title="Academic Details">
+              <ProfileItem label="University" value={profile?.university} />
+              <ProfileItem label="Major" value={profile?.major} />
+              <ProfileItem label="Degree Level" value={profile?.degree_level} />
+              <ProfileItem label="CGPA" value={profile?.cgpa} />
+              <ProfileItem label="High School" value={profile?.high_school} />
+            </ProfileSection>
+          </motion.div>
 
-          <ProfileSection title="Academic Details">
-            <ProfileItem label="University" value={profile?.university} />
-            <ProfileItem label="Major" value={profile?.major} />
-            <ProfileItem label="Degree Level" value={profile?.degree_level} />
-            <ProfileItem label="CGPA" value={profile?.cgpa} />
-            <ProfileItem label="High School" value={profile?.high_school} />
-          </ProfileSection>
+          <motion.div variants={item}>
+            <ProfileSection title="Financial Details">
+              <ProfileItem
+                label="Family Income"
+                value={
+                  profile?.family_income
+                    ? `₹${profile.family_income}`
+                    : null
+                }
+              />
+            </ProfileSection>
+          </motion.div>
 
-          <ProfileSection title="Financial Details">
-            <ProfileItem
-              label="Family Income"
-              value={
-                profile?.family_income
-                  ? `₹${profile.family_income}`
-                  : null
-              }
-            />
-          </ProfileSection>
-
-          <ProfileSection title="Additional Info">
-            <ProfileItem label="Phone" value={profile?.phone} />
-            <ProfileItem label="First Gen Student" value={profile?.first_gen} />
-            <ProfileItem label="Financial Aid Needed" value={profile?.financial_aid} />
-          </ProfileSection>
-
-        </div>
-      </div>
+          <motion.div variants={item}>
+            <ProfileSection title="Additional Info">
+              <ProfileItem label="Phone" value={profile?.phone} />
+              <ProfileItem label="First Gen Student" value={profile?.first_gen} />
+              <ProfileItem label="Financial Aid Needed" value={profile?.financial_aid} />
+            </ProfileSection>
+          </motion.div>
+        </motion.div>
+      </motion.div>
 
       <Footer />
-    </div>
+    </motion.div>
   );
 }
-
-/* COMPONENTS */
 
 function ProfileSection({ title, children }) {
   return (
